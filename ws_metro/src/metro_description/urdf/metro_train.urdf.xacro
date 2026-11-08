@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<!--
+  ROS-side kinematic description of the metro train.
+
+  This file is intentionally lightweight: Gazebo physics and the 1-D motion
+  model live in models/metro_train/model.sdf.xacro.  The URDF is provided for
+  robot_state_publisher / RViz based inspection and for downstream tools that
+  expect a URDF.  Dimensions and mass match the SDF exactly.
+-->
+<robot name="metro_train" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:property name="length" value="120.0"/>
+  <xacro:property name="width" value="3.0"/>
+  <xacro:property name="height" value="3.8"/>
+  <xacro:property name="mass" value="30000.0"/>
+  <xacro:property name="body_y" value="6.65"/>
+  <xacro:property name="body_z" value="2.30"/>
+
+  <link name="base_link"/>
+
+  <link name="train_body">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="${mass}"/>
+      <inertia ixx="58600.0" ixy="0" ixz="0"
+               iyy="36036100.0" iyz="0"
+               izz="36022500.0"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="${length} ${width} ${height}"/>
+      </geometry>
+      <material name="train_grey">
+        <color rgba="0.80 0.84 0.88 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="${length} ${width} ${height}"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Visual-only longitudinal joint.  The Gazebo plugin drives the SDF joint;
+       this URDF joint exists so the tree is complete for ROS tooling. -->
+  <joint name="train_longitudinal" type="prismatic">
+    <parent link="base_link"/>
+    <child link="train_body"/>
+    <origin xyz="0 ${body_y} ${body_z}" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-200.0" upper="200.0" effort="200000.0" velocity="20.0"/>
+  </joint>
+</robot>

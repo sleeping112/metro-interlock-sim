@@ -1,0 +1,23 @@
+# ros_gz_bridge configuration.
+# The launch file converts these entries into parameter_bridge CLI arguments
+# for maximum Humble compatibility.  qos_profile is honoured by bridge versions
+# that support YAML configuration; consumers are in any case created with
+# SensorDataQoS for /metro/train/odom.
+- ros_topic_name: "/clock"
+  gz_topic_name: "/clock"
+  ros_type_name: "rosgraph_msgs/msg/Clock"
+  gz_type_name: "gz.msgs.Clock"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/metro/train/odom"
+  gz_topic_name: "/metro/train/odom"
+  ros_type_name: "nav_msgs/msg/Odometry"
+  gz_type_name: "gz.msgs.Odometry"
+  direction: GZ_TO_ROS
+  qos_profile: sensor_data
+
+- ros_topic_name: "/metro/train/command"
+  gz_topic_name: "/metro/train/command"
+  ros_type_name: "geometry_msgs/msg/Twist"
+  gz_type_name: "gz.msgs.Twist"
+  direction: ROS_TO_GZ

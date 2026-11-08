@@ -1,0 +1,14 @@
+train_speed_controller_node:
+  ros__parameters:
+    use_sim_time: true
+    # Stand-alone bench node: never publishes by default.  The interlock node
+    # is the single writer of /metro/train/command in the integrated launch.
+    publish_command: false
+    control_rate_hz: 10.0
+    x_stop_m: 0.0
+    cruise_speed_mps: 8.0
+    brake_decel_mps2: 1.0
+    approach_margin_m: 0.5
+    max_speed_mps: 20.0
+    auto_run: true
+    manual_speed_mps: 0.0

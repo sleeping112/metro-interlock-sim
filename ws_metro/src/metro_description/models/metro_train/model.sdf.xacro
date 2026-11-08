@@ -1,0 +1,145 @@
+<?xml version="1.0"?>
+<!--
+  Gazebo Harmonic (SDF 1.8) description of the 120 m metro train.
+
+  Inputs : none.
+  Outputs: SDF model spawned by ros_gz_sim create.
+  The model is a true 1-D longitudinal body: train_base is fixed to the world
+  and train_body is constrained by the prismatic joint train_longitudinal on
+  the +x axis.  The TrainLongitudinal system plugin drives that joint and
+  publishes /metro/train/odom at 50 Hz on the Gazebo side.
+-->
+<sdf version="1.8" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:property name="train_length" value="120.0"/>
+  <xacro:property name="train_width" value="3.0"/>
+  <xacro:property name="train_height" value="3.8"/>
+  <xacro:property name="train_mass" value="30000.0"/>
+  <xacro:property name="body_y" value="6.65"/>
+  <xacro:property name="body_z" value="2.30"/>
+
+  <model name="metro_train">
+    <static>false</static>
+    <self_collide>false</self_collide>
+    <allow_auto_disable>false</allow_auto_disable>
+    <pose>0 0 0 0 0 0</pose>
+
+    <link name="train_base">
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>0.01</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>0.01</iyy><iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+    </link>
+
+    <link name="train_body">
+      <pose>0 ${body_y} ${body_z} 0 0 0</pose>
+      <inertial>
+        <mass>${train_mass}</mass>
+        <inertia>
+          <ixx>58600.0</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>36036100.0</iyy><iyz>0</iyz>
+          <izz>36022500.0</izz>
+        </inertia>
+      </inertial>
+
+      <collision name="train_body_collision">
+        <geometry>
+          <box>
+            <size>${train_length} ${train_width} ${train_height}</size>
+          </box>
+        </geometry>
+        <surface>
+          <friction>
+            <ode><mu>0.05</mu><mu2>0.05</mu2></ode>
+          </friction>
+          <contact>
+            <ode><max_vel>0.01</max_vel><min_depth>0.001</min_depth></ode>
+          </contact>
+        </surface>
+      </collision>
+
+      <visual name="train_body_visual">
+        <geometry>
+          <mesh>
+            <uri>model://metro_train/meshes/unit_box.stl</uri>
+            <scale>${train_length} ${train_width} ${train_height}</scale>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.72 0.76 0.80 1</ambient>
+          <diffuse>0.80 0.84 0.88 1</diffuse>
+          <specular>0.35 0.35 0.35 1</specular>
+        </material>
+      </visual>
+
+      <!-- Blue waistline, visual only. -->
+      <visual name="train_waistline_visual">
+        <pose>0 0 -0.55 0 0 0</pose>
+        <geometry>
+          <box><size>${train_length + 0.02} ${train_width + 0.02} 0.35</size></box>
+        </geometry>
+        <material>
+          <ambient>0.05 0.20 0.55 1</ambient>
+          <diffuse>0.05 0.20 0.55 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- Door collision pads, one per PSD unit, on the platform side (-y). -->
+      <collision name="train_door_collision_01">
+        <pose>-15.0 -1.54 -0.80 0 0 0</pose>
+        <geometry><box><size>1.4 0.06 2.2</size></box></geometry>
+      </collision>
+      <collision name="train_door_collision_02">
+        <pose>-5.0 -1.54 -0.80 0 0 0</pose>
+        <geometry><box><size>1.4 0.06 2.2</size></box></geometry>
+      </collision>
+      <collision name="train_door_collision_03">
+        <pose>5.0 -1.54 -0.80 0 0 0</pose>
+        <geometry><box><size>1.4 0.06 2.2</size></box></geometry>
+      </collision>
+      <collision name="train_door_collision_04">
+        <pose>15.0 -1.54 -0.80 0 0 0</pose>
+        <geometry><box><size>1.4 0.06 2.2</size></box></geometry>
+      </collision>
+    </link>
+
+    <joint name="train_base_fixed" type="fixed">
+      <parent>world</parent>
+      <child>train_base</child>
+    </joint>
+
+    <!-- Zero configuration: body at its link pose.  Joint position is therefore
+         exactly the longitudinal displacement used by /metro/train/odom. -->
+    <joint name="train_longitudinal" type="prismatic">
+      <parent>train_base</parent>
+      <child>train_body</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>-200.0</lower>
+          <upper>200.0</upper>
+          <effort>200000.0</effort>
+          <velocity>20.0</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.2</damping>
+          <friction>0.05</friction>
+        </dynamics>
+      </axis>
+    </joint>
+
+    <plugin filename="libmetro_train_plugin.so" name="metro::gazebo::TrainLongitudinal">
+      <odom_topic>/metro/train/odom</odom_topic>
+      <command_topic>/metro/train/command</command_topic>
+      <odom_rate_hz>50.0</odom_rate_hz>
+      <max_speed_mps>20.0</max_speed_mps>
+      <max_accel_mps2>1.0</max_accel_mps2>
+      <max_decel_mps2>2.0</max_decel_mps2>
+      <rail_y_m>6.65</rail_y_m>
+    </plugin>
+  </model>
+</sdf>

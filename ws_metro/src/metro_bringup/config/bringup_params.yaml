@@ -1,0 +1,6 @@
+metro_bringup:
+  ros__parameters:
+    initial_train_x_m: -80.0
+    x_stop_m: 0.0
+    psd_unit_count: 4
+    world_name: metro_station

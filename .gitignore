@@ -1,0 +1,10 @@
+# ROS 2 / colcon build outputs
+ws_metro/build/
+ws_metro/install/
+ws_metro/log/
+
+# Editor / OS noise
+.vscode/
+.idea/
+*.swp
+.DS_Store

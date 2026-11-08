@@ -1,0 +1,23 @@
+interlock_node:
+  ros__parameters:
+    use_sim_time: true
+    # R2: parking window around x_stop
+    stop_window_m: 0.5
+    # R4: PSD must report "not locked" within this time after an open command
+    psd_open_timeout_s: 3.0
+    # R5: emergency brake threshold
+    emergency_speed_threshold_mps: 0.1
+    # fault publication lifecycle
+    fault_hold_s: 1.0
+    fault_repeat_suppression_s: 5.0
+    # controller
+    control_rate_hz: 10.0
+    psd_unit_count: 4
+    # train speed governor (used when auto_run=true)
+    auto_run: true
+    manual_speed_mps: 0.0
+    x_stop_m: 0.0
+    cruise_speed_mps: 8.0
+    brake_decel_mps2: 1.0
+    approach_margin_m: 0.5
+    max_speed_mps: 20.0
