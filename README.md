@@ -183,6 +183,9 @@ Humble/Harmonic 为目标）；端到端验收在本机 Lyrical/gz10 上完成�
 
 ## 9. 常见问题
 
+- **复制/重命名工作空间后构建报 CMakeCache 路径不一致**：colcon/CMake 缓存中
+  保存了绝对路径。删除 `ws_metro/build`、`ws_metro/install`、`ws_metro/log`
+  后重跑 `scripts/build.sh`；当前构建脚本会自动检测并清理这种陈旧缓存。
 - **Gazebo 找不到插件**：确认是 `source ws_metro/install/setup.bash` 后通过
   launch 启动；launch 会把 `install/metro_gazebo/lib` 加入
   `GZ_SIM_SYSTEM_PLUGIN_PATH`。

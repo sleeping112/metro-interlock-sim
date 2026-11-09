@@ -12,6 +12,19 @@ source "/opt/ros/${DISTRO}/setup.bash"
 WS_DIR="$(cd "${SCRIPT_DIR}/../ws_metro" && pwd)"
 cd "${WS_DIR}"
 
+# colcon/CMake caches contain absolute source paths.  If the workspace was
+# copied or renamed, a stale cache points at the old directory and CMake aborts.
+shopt -s nullglob
+for cache in "${WS_DIR}"/build/*/CMakeCache.txt; do
+  recorded="$(sed -n 's/^# For build in directory: //p' "${cache}" | head -n 1)"
+  if [[ -n "${recorded}" && "${recorded}" != "${WS_DIR}/"* ]]; then
+    echo "stale build cache detected (${recorded}); cleaning build/install/log"
+    rm -rf "${WS_DIR}/build" "${WS_DIR}/install" "${WS_DIR}/log"
+    break
+  fi
+done
+shopt -u nullglob
+
 CMAKE_ARGS=()
 # Local validation containers may expose an old Windows/Anaconda protobuf
 # include directory before /usr/include.  It is unrelated to the ROS/Gazebo
