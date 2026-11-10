@@ -12,3 +12,7 @@ ws_metro/log/
 # Python cache
 __pycache__/
 *.pyc
+
+.pytest_cache/
+.ruff_cache/
+**/__pycache__/
