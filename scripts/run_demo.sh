@@ -12,4 +12,4 @@ WS_DIR="$(cd "${SCRIPT_DIR}/../ws_metro" && pwd)"
 # shellcheck disable=SC1091
 source "${WS_DIR}/install/setup.bash"
 
-exec ros2 launch metro_bringup metro_demo.launch.py "$@"
+exec ros2 launch metro_bringup metro_scene.launch.py "$@"

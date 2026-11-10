@@ -1,4 +1,4 @@
-"""Start Gazebo Harmonic, spawn the train and bridge the three gazebo topics.
+"""Start Gazebo Harmonic, spawn the train and bridge the configured Gazebo topics.
 
 This launch intentionally contains no application logic.  The interlock and the
 train speed controller live in metro_application and are started by
@@ -81,7 +81,7 @@ def _launch_setup(context, *args, **kwargs):
         raise RuntimeError(f"Train model not found: {xacro_path}")
     train_sdf = xacro.process_file(xacro_path).toxml()
 
-    gz_args = f"-v 4 {'-s ' if headless else ''}-r {world}"
+    gz_args = f"-v 4 {'-s --headless-rendering ' if headless else ''}-r {world}"
 
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -127,6 +127,8 @@ def _launch_setup(context, *args, **kwargs):
                 # the contract.  Implementations that do not expose QoS
                 # overrides silently ignore this parameter.
                 "qos_overrides./metro/train/odom.publisher.reliability": "best_effort",
+                "qos_overrides./metro/camera/platform/image.publisher.reliability": "best_effort",
+                "qos_overrides./metro/camera/platform/camera_info.publisher.reliability": "best_effort",
             }
         ],
     )
@@ -179,7 +181,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "initial_x",
-                default_value="-80.0",
+                default_value="-160.0",
                 description="Initial longitudinal train position in metres",
             ),
             DeclareLaunchArgument(

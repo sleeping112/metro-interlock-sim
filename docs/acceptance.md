@@ -102,3 +102,26 @@ ros2 topic echo /metro/interlock/fault
 - R5 通过“低速经过停车窗时请求开门”触发；在真实运营中，R2 通常会先拒绝
   列车未停稳时的开门请求，R5 是屏蔽门被意外打开时的最后一道防护。
 - 验收脚本结束后会关闭门并停车；实际运营策略不在此仿真范围。
+
+
+## 7. 场景丰富化验收（A/B/C）
+
+场景升级后的核心 21 项验收仍通过。额外检查：
+
+```bash
+# 12 个 PSD 单门服务
+ros2 service list | grep -c '/metro/psd/unit_'
+
+# 完整场景：到站—开门—20 s 停留—关门—发车
+ros2 launch metro_bringup metro_scene.launch.py headless:=true rviz:=false
+
+# 监控与相机
+ros2 topic echo /metro/monitor/markers --once
+ros2 topic echo /metro/platform/intrusion --once
+ros2 topic hz /metro/camera/platform/image
+```
+
+实测结果：12 个单元服务；列车在 x≈−0.48 m 停靠；开门后乘客波次启动，
+`/metro/platform/intrusion` 出现 true→false；停留 20 s 后关门、锁紧并发车；
+MarkerArray 含 15 个 marker；相机图像约 9–10 Hz。核心验收仍为
+`21/21 checks passed`。

@@ -69,7 +69,53 @@ target_link_libraries(metro_train_plugin PUBLIC
   ${GZ_PLUGIN_TARGET}
 )
 
-install(TARGETS metro_door_controller metro_train_plugin
+
+add_library(metro_passenger_flow SHARED src/passenger_flow.cpp)
+target_include_directories(metro_passenger_flow PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(metro_passenger_flow PUBLIC
+  ${GZ_SIM_TARGET}
+  ${GZ_TRANSPORT_TARGET}
+  ${GZ_MSGS_TARGET}
+  ${GZ_PLUGIN_TARGET}
+  rclcpp::rclcpp
+  std_msgs::std_msgs
+)
+
+add_library(metro_ambient_train SHARED src/ambient_train.cpp)
+target_include_directories(metro_ambient_train PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(metro_ambient_train PUBLIC
+  ${GZ_SIM_TARGET}
+  ${GZ_TRANSPORT_TARGET}
+  ${GZ_MSGS_TARGET}
+  ${GZ_PLUGIN_TARGET}
+)
+
+add_library(metro_intrusion_detector SHARED src/intrusion_detector.cpp)
+target_include_directories(metro_intrusion_detector PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(metro_intrusion_detector PUBLIC
+  ${GZ_SIM_TARGET}
+  ${GZ_TRANSPORT_TARGET}
+  ${GZ_MSGS_TARGET}
+  ${GZ_PLUGIN_TARGET}
+  rclcpp::rclcpp
+  std_msgs::std_msgs
+)
+
+install(TARGETS
+  metro_door_controller
+  metro_train_plugin
+  metro_passenger_flow
+  metro_ambient_train
+  metro_intrusion_detector
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
@@ -79,6 +125,6 @@ install(DIRECTORY include/
 )
 
 ament_export_include_directories(include)
-ament_export_libraries(metro_door_controller metro_train_plugin)
+ament_export_libraries(metro_door_controller metro_train_plugin metro_passenger_flow metro_ambient_train metro_intrusion_detector)
 ament_export_dependencies(rclcpp std_msgs std_srvs)
 ament_package()

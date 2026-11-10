@@ -27,12 +27,20 @@ REQUIRED_FILES = [
     "ws_metro/src/metro_description/models/metro_psd_unit/model.sdf.xacro",
     "ws_metro/src/metro_description/urdf/metro_train.urdf.xacro",
     "ws_metro/src/metro_description/meshes/unit_box.stl",
+    "ws_metro/src/metro_description/models/metro_train/meshes/unit_box.stl",
+    "ws_metro/src/metro_description/models/metro_station/textures/station_name.png",
     "ws_metro/src/metro_gazebo/src/door_controller.cpp",
     "ws_metro/src/metro_gazebo/src/train_longitudinal.cpp",
+    "ws_metro/src/metro_gazebo/src/passenger_flow.cpp",
+    "ws_metro/src/metro_gazebo/src/ambient_train.cpp",
+    "ws_metro/src/metro_gazebo/src/intrusion_detector.cpp",
     "ws_metro/src/metro_application/src/interlock_node.cpp",
     "ws_metro/src/metro_application/src/train_speed_controller_node.cpp",
+    "ws_metro/src/metro_application/src/scenario_orchestrator.cpp",
+    "ws_metro/src/metro_application/src/platform_monitor.cpp",
     "ws_metro/src/metro_bringup/worlds/metro_station.world",
     "ws_metro/src/metro_bringup/launch/metro_demo.launch.py",
+    "ws_metro/src/metro_bringup/launch/metro_scene.launch.py",
     "ws_metro/src/metro_bringup/launch/acceptance.launch.py",
     "ws_metro/src/metro_bringup/config/bridge.yaml",
     "ws_metro/src/metro_bringup/scripts/acceptance_test.py",
@@ -74,7 +82,7 @@ def main():
     check('version="1.8"' in world, "world is SDF 1.8", errors)
     check("<max_step_size>0.001</max_step_size>" in world, "world step 0.001 s", errors)
     check("<real_time_update_rate>100</real_time_update_rate>" in world, "world 100 Hz", errors)
-    for index in range(1, 5):
+    for index in range(1, 13):
         uid = f"{index:02d}"
         check(f'name="psd_unit_{uid}"' in world, f"static frame psd_unit_{uid}", errors)
         check(f'name="psd_door_{uid}"' in world, f"door model psd_door_{uid}", errors)
@@ -82,11 +90,17 @@ def main():
         check(f'name="psd_right_{uid}"' in world, f"right leaf psd_right_{uid}", errors)
         check(f'name="psd_left_joint_{uid}"' in world, f"left joint {uid}", errors)
         check(f'name="psd_right_joint_{uid}"' in world, f"right joint {uid}", errors)
-    check(world.count("<static>true</static>") >= 6, "static platform/track/frame models", errors)
+    check(world.count("<static>true</static>") >= 30, "static platform/track/frame models", errors)
+    check("130.0 14.0 0.3" in world or "130.0 14.0 0.30" in world, "130 x 14 m platform", errors)
+    for token in ["passenger_01", "ambient_train", "platform_camera",
+                  "libmetro_passenger_flow.so", "libmetro_intrusion_detector.so",
+                  "gz-sim-sensors-system"]:
+        check(token in world, f"enriched world contains {token}", errors)
 
     train = read(SRC / "metro_description/models/metro_train/model.sdf.xacro")
     for token in ["120.0", "3.0", "3.8", "30000.0", "train_longitudinal",
-                  "train_door_collision_01"]:
+                  "train_door_collision_01", "train_door_collision_12",
+                  "car_06_body"]:
         check(token in train, f"train model contains {token}", errors)
     check("libmetro_train_plugin.so" in train, "train plugin reference", errors)
 
@@ -110,9 +124,13 @@ def main():
           "per-unit service names generated with two-digit index", errors)
 
     bridge = read(SRC / "metro_bringup/config/bridge.yaml")
-    for topic in ["/clock", "/metro/train/odom", "/metro/train/command"]:
+    for topic in ["/clock", "/metro/train/odom", "/metro/train/command",
+                  "/metro/camera/platform/image"]:
         check(topic in bridge, f"bridge entry for {topic}", errors)
-    check("sensor_data" in bridge, "odom bridge QoS profile documented", errors)
+    check("sensor_data" in bridge, "odom/camera bridge QoS profile documented", errors)
+    for topic in ["/metro/platform/intrusion", "/metro/monitor/markers"]:
+        check(topic in "".join(read(path) for path in (SRC / "metro_application/src").glob("*.cpp")),
+              f"monitor topic {topic}", errors)
 
     params = read(SRC / "metro_bringup/config/interlock_params.yaml")
     for key in ["stop_window_m", "psd_open_timeout_s", "emergency_speed_threshold_mps",
@@ -121,7 +139,8 @@ def main():
 
     launch = read(SRC / "metro_bringup/launch/metro_sim.launch.py")
     for token in ["GZ_SIM_RESOURCE_PATH", "GZ_SIM_SYSTEM_PLUGIN_PATH",
-                  "ros_gz_sim", "parameter_bridge", "qos_overrides"]:
+                  "ros_gz_sim", "parameter_bridge", "qos_overrides",
+                  "--headless-rendering"]:
         check(token in launch, f"launch contains {token}", errors)
 
     print()

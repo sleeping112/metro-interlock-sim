@@ -48,7 +48,7 @@ def generate_launch_description():
         [
             DeclareLaunchArgument(
                 "initial_x",
-                default_value="-80.0",
+                default_value="-160.0",
                 description="Initial train x position (must match spawn)",
             ),
             DeclareLaunchArgument(

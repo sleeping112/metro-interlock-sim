@@ -8,3 +8,7 @@ ws_metro/log/
 .idea/
 *.swp
 .DS_Store
+
+# Python cache
+__pycache__/
+*.pyc

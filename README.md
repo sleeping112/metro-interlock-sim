@@ -7,7 +7,8 @@ colcon/ament_cmake + C++17**，源码位于 `ws_metro/src`。
 本仓库按需求分五个阶段实现，阶段 1 的接口基线见
 [docs/stage1_design.md](docs/stage1_design.md)，实现约定见
 [docs/implementation_notes.md](docs/implementation_notes.md)，验收说明见
-[docs/acceptance.md](docs/acceptance.md)。
+[docs/acceptance.md](docs/acceptance.md)。阶段 5 之后完成了 A/B/C 场景丰富化，
+详见 [docs/scene_enhancement.md](docs/scene_enhancement.md)。
 
 ## 1. 快速开始
 
@@ -16,13 +17,16 @@ colcon/ament_cmake + C++17**，源码位于 `ws_metro/src`。
 bash scripts/build.sh
 # 也可显式指定：ROS_DISTRO=lyrical bash scripts/build.sh
 
-# 2) 图形化演示：Gazebo + RViz + 联锁节点
+# 2) 图形化完整场景：Gazebo + RViz + 乘客/到发/相机
 bash scripts/run_demo.sh
 
-# 3) 无界面演示（CI / 远程）
+# 3) 无界面完整场景（CI / 远程）
 bash scripts/run_headless.sh
 
-# 4) 自动验收（无界面，启动全链路并运行 21 项检查）
+# 4) 完整场景：130 m 车站 + 12 PSD + 乘客 + 到发场景 + 相机/监控
+bash scripts/run_scene.sh
+
+# 5) 自动验收（无界面，启动全链路并运行 21 项检查）
 bash scripts/run_acceptance.sh
 ```
 
@@ -53,15 +57,18 @@ togazebo/
 ├── docs/
 │   ├── stage1_design.md          # 阶段 1：目录/清单/接口契约/状态转移表
 │   ├── implementation_notes.md   # 阶段 2–5 实现约定
+│   ├── scene_enhancement.md      # A/B/C 场景丰富化说明
 │   └── acceptance.md             # 端到端验收场景与结果
 ├── scripts/
 │   ├── build.sh
 │   ├── run_demo.sh
+│   ├── run_scene.sh
 │   ├── run_headless.sh
 │   ├── run_acceptance.sh
 │   ├── ros_env.sh                # ROS 发行版自动探测
 │   ├── generate_primitives.py    # 生成 1 m 单位 STL
-│   ├── generate_world.py         # 生成四个 PSD 单元的世界（保留可复现性）
+│   ├── generate_world.py         # 生成 12 PSD/车站/乘客/相机的完整世界
+│   ├── generate_station_textures.py # 程序化站名/线路图/出口标识
 │   └── verify_workspace.py       # 静态自检
 └── ws_metro/
     └── src/
@@ -82,13 +89,17 @@ togazebo/
 | `/metro/psd/state` | `std_msgs/msg/Bool` | reliable, depth 10 | 10 Hz | `true` = 全部门扇关闭并锁紧 |
 | `/metro/interlock/fault` | `std_msgs/msg/String` | reliable, depth 10 | 事件触发 | 保持 1 s；同码 5 s 去重；空串清除 |
 | `/clock` | `rosgraph_msgs/msg/Clock` | reliable | 仿真时钟 | 由 `ros_gz_bridge` 从 Gazebo 桥接 |
+| `/metro/platform/intrusion` | `std_msgs/msg/Bool` | reliable, depth 10 | 10 Hz | C 阶段站台边缘入侵检测 |
+| `/metro/monitor/markers` | `visualization_msgs/msg/MarkerArray` | reliable, depth 10 | 10 Hz | C 阶段 RViz 监控显示 |
+| `/metro/camera/platform/image` | `sensor_msgs/msg/Image` | sensor data | ~10 Hz | C 阶段站台相机 |
+| `/metro/camera/platform/camera_info` | `sensor_msgs/msg/CameraInfo` | sensor data | ~10 Hz | 相机内参 |
 
 ### 3.2 服务
 
 | 服务 | 类型 | 服务端 | 语义 |
 |---|---|---|---|
 | `/metro/psd/command` | `std_srvs/srv/SetBool` | 联锁节点 | 总开关；`true` 开门先过 R1/R2 |
-| `/metro/psd/unit_01/command` … `unit_04/command` | `std_srvs/srv/SetBool` | DoorController 插件 | 每个单元独立服务，低层执行机构 |
+| `/metro/psd/unit_01/command` … `unit_12/command` | `std_srvs/srv/SetBool` | DoorController 插件 | 每个单元独立服务，低层执行机构 |
 | `/metro/interlock/enable` | `std_srvs/srv/SetBool` | 联锁节点 | 联锁使能 |
 
 `/metro/train/odom` 的桥接发布端已通过 bridge 的
@@ -111,15 +122,17 @@ R5 解除后若门仍未关闭，再上报 R3（故障保持期不会被打断�
 
 ## 5. 模型与场景
 
-- 列车：长 120 m、宽 3 m、高 3.8 m、质量 30 t；`train_base` 固定于世界，
-  `train_body` 由 `train_longitudinal` prismatic 关节约束在 x 轴；包含车体和
-  4 个车门碰撞盒。由 `libmetro_train_plugin.so` 驱动并以 50 Hz 发布 Gazebo
-  里程计。
-- 站台：50 × 10 × 0.3 m；两侧轨道床各 50 × 2 × 0.2 m，全部 static；
-  安全线仅视觉、无碰撞。
-- 屏蔽门：4 个单元，中心 x = −15/−5/+5/+15 m；`psd_unit_XX` 为独立 static
-  框架模型；`psd_door_XX` 中 `psd_left_XX`/`psd_right_XX` 为 prismatic
-  滑动门扇，行程 1.8 m；门扇与门框分层布置，避免运动学重叠。
+- 列车：长 120 m、宽 3 m、高 3.8 m、质量 30 t；视觉上 6 节 × 20 m 车厢，
+  `train_base` 固定于世界，`train_body` 由 `train_longitudinal` prismatic
+  关节约束在 x 轴；包含车体和 12 个车门碰撞盒，车体中心线 y=8.65 m。
+  由 `libmetro_train_plugin.so` 驱动并以 50 Hz 发布 Gazebo 里程计。
+- 站台：**130 × 14 × 0.3 m 岛式站台**，顶面 z=0.3；两侧轨道床各
+  **180 × 2 × 0.2 m**，轨道中心 y=±8.65 m，全部 static；安全线/盲道仅视觉。
+- 屏蔽门：**12 个单元**，中心 x = −55…+55 m，间距 10 m；`psd_unit_XX` 为独立
+  static 框架模型；`psd_door_XX` 中 `psd_left_XX`/`psd_right_XX` 为 prismatic
+  滑动门扇，行程 1.8 m。
+- 场景资产：吊顶/柱网/灯带、闸机、座椅、售票机、站名/线路图/出口标识、
+  隧道、道砟/轨枕/接触网、12 个乘客、对向背景列车、站台相机。
 - 世界物理：`max_step_size=0.001 s`，`real_time_update_rate=100 Hz`，SDF 1.8。
 
 ## 6. 参数
@@ -141,7 +154,7 @@ R5 解除后若门仍未关闭，再上报 R3（故障保持期不会被打断�
 | `cruise_speed_mps` | 8.0 | interlock_params.yaml |
 | `brake_decel_mps2` | 1.0 | interlock_params.yaml |
 | `approach_margin_m` | 0.5 | interlock_params.yaml |
-| `psd_unit_count` | 4 | interlock_params.yaml |
+| `psd_unit_count` | 12 | interlock_params.yaml |
 
 运行时手动测试：
 
@@ -171,9 +184,12 @@ ros2 run metro_application train_speed_controller_node --ros-args \
 |---|---|---|
 | 1 | 目录/清单/接口契约/状态转移表 | ✅ `docs/stage1_design.md` |
 | 2 | 列车 Xacro/URDF、PSD SDF、`metro_station.world` | ✅ `gz sdf -k` 通过 |
-| 3 | DoorController、TrainLongitudinal 插件 | ✅ colcon 编译通过；4 个单元服务 |
+| 3 | DoorController、TrainLongitudinal 插件 | ✅ colcon 编译通过；12 个单元服务 |
 | 4 | 联锁节点、故障管理、速度控制节点 | ✅ 规则 R1–R5 与故障生命周期 |
 | 5 | launch/bridge/参数/RViz/验收脚本 | ✅ 21/21 验收通过 |
+| A | 130 m 站台、12 PSD、6 车厢、车站资产/灯光/标识 | ✅ `gz sdf -k` 通过 |
+| B | 到站—停靠—发车场景、12 乘客、对向列车 | ✅ 场景链路实测 |
+| C | 站台入侵检测、MarkerArray 监控、站台相机 | ✅ 图像/入侵话题实测 |
 
 本机验证环境的说明：仓库目标是最新的 ROS 2 Humble + Gazebo Harmonic
 (gz-sim8)，但当前开发容器实际提供 ROS 2 Lyrical + gz-sim10。CMake 先查找
@@ -193,6 +209,10 @@ Humble/Harmonic 为目标）；端到端验收在本机 Lyrical/gz10 上完成�
   `use_sim_time=true`。
 - **`/metro/interlock/fault` 偶发空串**：这是故障保持 1 s 结束后按契约清除，
   不是丢失消息。
-- **想改门数量/位置**：需要同时修改 `metro_station.world` 中的
-  `psd_unit_XX`/`psd_door_XX` 模型、`unit_count` 与
-  `interlock_params.yaml` 的 `psd_unit_count`；服务名自动按两位编号生成。
+- **想改门数量/位置**：优先修改 `scripts/generate_world.py` 中的
+  `UNIT_COUNT`/`UNIT_X`，重新生成世界；同时更新 `interlock_params.yaml`
+  的 `psd_unit_count`、`metro_scene.launch.py` 的 monitor 参数。服务名自动
+  按两位编号生成。
+- **相机/渲染报错**：确认 headless 启动使用 `--headless-rendering`（
+  `metro_sim.launch.py` 已自动加入）；无 GPU 环境可先把 `<sensors-system>`
+  与 `platform_camera` 从场景中移除，再仅运行核心联锁验收。

@@ -1,6 +1,12 @@
 # 单线地铁站台—列车—屏蔽门联锁仿真：阶段 1 设计基线
 
 > 本文件是阶段 1 的交付物，也是后续所有实现的唯一接口基线。
+
+> **场景升级说明（阶段 5 之后）**：A/B/C 阶段已将站台扩展为 130×14 m、PSD 扩为 12 个、
+> 列车视觉拆为 6 节车厢，并加入乘客/相机/监控。以下 50 m/4 单元/4 碰撞盒数值是阶段 1
+> 历史基线，核心话题/服务/联锁规则未变；新基线见
+> [scene_enhancement.md](scene_enhancement.md)。
+
 > 目标栈固定为 **ROS 2 Humble + Gazebo Harmonic (gz-sim8) + ros_gz_bridge/ros_gz_sim + colcon/ament_cmake + C++17**。
 
 ## 1. 工作空间目录树

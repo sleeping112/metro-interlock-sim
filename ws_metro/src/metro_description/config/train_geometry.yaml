@@ -5,19 +5,19 @@ train:
   width_m: 3.0
   height_m: 3.8
   mass_kg: 30000.0
-  body_center_y_m: 6.65
+  body_center_y_m: 8.65
   body_center_z_m: 2.30
   door_collision:
     size_m: [1.4, 0.06, 2.2]
-    centers_x_m: [-15.0, -5.0, 5.0, 15.0]
+    centers_x_m: [-55.0, -45.0, -35.0, -25.0, -15.0, -5.0, 5.0, 15.0, 25.0, 35.0, 45.0, 55.0]
     offset_y_m: -1.54   # relative to train_body
     offset_z_m: -0.80   # relative to train_body
 
 motion:
   joint_name: train_longitudinal
   axis: [1.0, 0.0, 0.0]
-  lower_m: -200.0
-  upper_m: 200.0
+  lower_m: -240.0
+  upper_m: 240.0
   max_speed_mps: 20.0
   max_accel_mps2: 1.0
   max_decel_mps2: 2.0

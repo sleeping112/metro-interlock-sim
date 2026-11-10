@@ -12,7 +12,7 @@ interlock_node:
     fault_repeat_suppression_s: 5.0
     # controller
     control_rate_hz: 10.0
-    psd_unit_count: 4
+    psd_unit_count: 12
     # train speed governor (used when auto_run=true)
     auto_run: true
     manual_speed_mps: 0.0
